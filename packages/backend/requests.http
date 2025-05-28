@@ -1,0 +1,75 @@
+### Get all images
+# This is a comment
+GET http://localhost:3000/api/images
+
+### A second example. Each request must be delimited by a triple hash
+POST http://localhost:3000/api/test
+Content-Type: application/json # Content-Type header is a must if you're sending JSON
+# Request body separated from headers by newline
+
+{ "a": 1, "b": 2 }
+
+### Search images by name, should get nothing
+GET http://localhost:3000/api/images?search=sunset
+
+### Search images by another term, should get one
+GET http://localhost:3000/api/images?search=Husk
+
+### Edit image name (idempotent PUT request)
+PUT http://localhost:3000/api/images/68365c383d4c8c0cb202fc64
+Content-Type: application/json
+
+{
+  "name": "Updated Husky"
+}
+
+
+### Test invalid image ID
+PUT http://localhost:3000/api/images/nonexistent
+Content-Type: application/json
+
+{
+  "name": "This should fail"
+}
+
+### Test invalid request body (missing name)
+PUT http://localhost:3000/api/images/1
+Content-Type: application/json
+
+{
+  "title": "Wrong field name"
+}
+
+### Test error conditions
+
+### 1. Test invalid ObjectId format (404 Not Found)
+PUT http://localhost:3000/api/images/invalid-object-id
+Content-Type: application/json
+
+{
+  "name": "This should fail with invalid ObjectId"
+}
+
+### 2. Test missing name field (400 Bad Request)
+PUT http://localhost:3000/api/images/507f1f77bcf86cd799439011
+Content-Type: application/json
+
+{
+  "title": "Missing name field"
+}
+
+### 3. Test excessively long image name (422 Unprocessable Entity)
+PUT http://localhost:3000/api/images/507f1f77bcf86cd799439011
+Content-Type: application/json
+
+{
+  "name": "This is an extremely long image name that exceeds the maximum allowed length of 100 characters and should trigger a 422 Unprocessable Entity error response from the server"
+}
+
+### 4. Test valid ObjectId but non-existent image (404 Not Found)
+PUT http://localhost:3000/api/images/507f1f77bcf86cd799439011
+Content-Type: application/json
+
+{
+  "name": "Valid ObjectId but image doesn't exist"
+} 
