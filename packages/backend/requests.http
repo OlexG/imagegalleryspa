@@ -1,6 +1,10 @@
-### Get all images
+### Get all images - Should now return 401 Unauthorized without token
 # This is a comment
 GET http://localhost:3000/api/images
+
+### Get all images with authentication - Replace TOKEN_HERE with actual JWT token from login
+GET http://localhost:3000/api/images
+Authorization: Bearer TOKEN_HERE
 
 ### A second example. Each request must be delimited by a triple hash
 POST http://localhost:3000/api/test
@@ -9,13 +13,21 @@ Content-Type: application/json # Content-Type header is a must if you're sending
 
 { "a": 1, "b": 2 }
 
-### Search images by name, should get nothing
+### Search images by name, should get nothing - Now requires auth
 GET http://localhost:3000/api/images?search=sunset
 
-### Search images by another term, should get one
+### Search images by name with authentication - Replace TOKEN_HERE with actual JWT token
+GET http://localhost:3000/api/images?search=sunset
+Authorization: Bearer TOKEN_HERE
+
+### Search images by another term, should get one - Now requires auth
 GET http://localhost:3000/api/images?search=Husk
 
-### Edit image name (idempotent PUT request)
+### Search images by another term with authentication - Replace TOKEN_HERE with actual JWT token
+GET http://localhost:3000/api/images?search=Husk
+Authorization: Bearer TOKEN_HERE
+
+### Edit image name (idempotent PUT request) - Now requires auth
 PUT http://localhost:3000/api/images/68365c383d4c8c0cb202fc64
 Content-Type: application/json
 
@@ -23,8 +35,16 @@ Content-Type: application/json
   "name": "Updated Husky"
 }
 
+### Edit image name with authentication - Replace TOKEN_HERE with actual JWT token
+PUT http://localhost:3000/api/images/68365c383d4c8c0cb202fc64
+Content-Type: application/json
+Authorization: Bearer TOKEN_HERE
 
-### Test invalid image ID
+{
+  "name": "Updated Husky"
+}
+
+### Test invalid image ID - Now requires auth
 PUT http://localhost:3000/api/images/nonexistent
 Content-Type: application/json
 
@@ -32,7 +52,16 @@ Content-Type: application/json
   "name": "This should fail"
 }
 
-### Test invalid request body (missing name)
+### Test invalid image ID with authentication - Replace TOKEN_HERE with actual JWT token
+PUT http://localhost:3000/api/images/nonexistent
+Content-Type: application/json
+Authorization: Bearer TOKEN_HERE
+
+{
+  "name": "This should fail"
+}
+
+### Test invalid request body (missing name) - Now requires auth
 PUT http://localhost:3000/api/images/1
 Content-Type: application/json
 
@@ -42,7 +71,7 @@ Content-Type: application/json
 
 ### Test error conditions
 
-### 1. Test invalid ObjectId format (404 Not Found)
+### 1. Test invalid ObjectId format (404 Not Found) - Now requires auth
 PUT http://localhost:3000/api/images/invalid-object-id
 Content-Type: application/json
 
@@ -50,7 +79,7 @@ Content-Type: application/json
   "name": "This should fail with invalid ObjectId"
 }
 
-### 2. Test missing name field (400 Bad Request)
+### 2. Test missing name field (400 Bad Request) - Now requires auth
 PUT http://localhost:3000/api/images/507f1f77bcf86cd799439011
 Content-Type: application/json
 
@@ -58,7 +87,7 @@ Content-Type: application/json
   "title": "Missing name field"
 }
 
-### 3. Test excessively long image name (422 Unprocessable Entity)
+### 3. Test excessively long image name (422 Unprocessable Entity) - Now requires auth
 PUT http://localhost:3000/api/images/507f1f77bcf86cd799439011
 Content-Type: application/json
 
@@ -66,7 +95,7 @@ Content-Type: application/json
   "name": "This is an extremely long image name that exceeds the maximum allowed length of 100 characters and should trigger a 422 Unprocessable Entity error response from the server"
 }
 
-### 4. Test valid ObjectId but non-existent image (404 Not Found)
+### 4. Test valid ObjectId but non-existent image (404 Not Found) - Now requires auth
 PUT http://localhost:3000/api/images/507f1f77bcf86cd799439011
 Content-Type: application/json
 

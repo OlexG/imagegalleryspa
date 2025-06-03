@@ -1,0 +1,91 @@
+### New user registration - Success case
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{ "username": "newuser", "password": "password" }
+
+### Test missing username (400 Bad Request)
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{ "password": "password" }
+
+### Test missing password (400 Bad Request)
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{ "username": "testuser" }
+
+### Test missing both fields (400 Bad Request)
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{}
+
+### Test non-string username (400 Bad Request)
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{ "username": 123, "password": "password" }
+
+### Test duplicate username (409 Conflict) - Run after first success
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{ "username": "newuser", "password": "differentpassword" }
+
+### Register another test user
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{ "username": "testuser2", "password": "password123" }
+
+### ===== LOGIN TESTS =====
+
+### Successful login - Use after registering newuser
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{ "username": "newuser", "password": "password" }
+
+### Login with correct username but wrong password (401 Unauthorized)
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{ "username": "newuser", "password": "wrongpassword" }
+
+### Login with non-existent username (401 Unauthorized)
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{ "username": "nonexistentuser", "password": "password" }
+
+### Login missing username (400 Bad Request)
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{ "password": "password" }
+
+### Login missing password (400 Bad Request)
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{ "username": "newuser" }
+
+### Login missing both fields (400 Bad Request)
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{}
+
+### Login with non-string username (400 Bad Request)
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{ "username": 123, "password": "password" }
+
+### Login with second test user
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{ "username": "testuser2", "password": "password123" } 

@@ -1,6 +1,7 @@
 import express, { Request, Response } from "express";
 import { ImageProvider } from "../ImageProvider.js";
 import { ObjectId } from "mongodb";
+import { imageMiddlewareFactory, handleImageFileErrors } from "../middleware/imageUploadMiddleware.js";
 
 function waitDuration(numMs: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, numMs));
@@ -10,7 +11,7 @@ export function registerImageRoutes(app: express.Application, imageProvider: Ima
     // GET /api/images - Get all images with optional search query parameter
     app.get("/api/images", async (req: Request, res: Response): Promise<void> => {
         try {
-            await waitDuration(1000); // Wait 1 second
+            await waitDuration(Math.random() * 5000); // Wait random duration between 0 and 5 seconds
             
             // Handle search query parameter
             const searchParam = req.query.search;
@@ -79,6 +80,48 @@ export function registerImageRoutes(app: express.Application, imageProvider: Ima
                 return;
             }
 
+            // Get the image with authorId to check ownership
+            const image = await imageProvider.getImageWithAuthorId(imageId);
+            
+            if (!image) {
+                res.status(404).send({
+                    error: "Not Found",
+                    message: "Image does not exist"
+                });
+                return;
+            }
+
+            // Check if the logged-in user is the owner of the image
+            const loggedInUsername = req.user?.username;
+            if (!loggedInUsername) {
+                res.status(403).send({
+                    error: "Forbidden",
+                    message: "User authentication required"
+                });
+                return;
+            }
+
+            // Get the user's _id from their username
+            const userId = await imageProvider.getUserIdByUsername(loggedInUsername);
+            if (!userId) {
+                res.status(403).send({
+                    error: "Forbidden",
+                    message: "User not found"
+                });
+                return;
+            }
+
+            // Compare the user's _id with the image's authorId
+            if (image.authorId !== userId) {
+                res.status(403).send({
+                    error: "Forbidden",
+                    message: "You can only edit your own images"
+                });
+                return;
+            }
+
+            console.log(`User ${loggedInUsername} (ID: ${userId}) is authorized to edit image ${imageId}`);
+
             // Update the image name
             const matchedCount = await imageProvider.updateImageName(imageId, name);
             
@@ -97,4 +140,66 @@ export function registerImageRoutes(app: express.Application, imageProvider: Ima
             res.status(500).json({ error: "Failed to update image" });
         }
     });
+
+    // POST /api/images - Upload a new image
+    app.post(
+        "/api/images",
+        imageMiddlewareFactory.single("image"),
+        handleImageFileErrors,
+        async (req: Request, res: Response): Promise<void> => {
+            try {
+                // Check if file and name are present
+                if (!req.file) {
+                    res.status(400).json({
+                        error: "Bad Request",
+                        message: "Image file is required"
+                    });
+                    return;
+                }
+
+                const { name } = req.body;
+                if (!name || typeof name !== "string" || name.trim() === "") {
+                    res.status(400).json({
+                        error: "Bad Request",
+                        message: "Image name is required"
+                    });
+                    return;
+                }
+
+                // Get the logged-in user's username from the auth token
+                const loggedInUsername = req.user?.username;
+                if (!loggedInUsername) {
+                    res.status(401).json({
+                        error: "Unauthorized",
+                        message: "User authentication required"
+                    });
+                    return;
+                }
+
+                // Get the user's _id from their username
+                const userId = await imageProvider.getUserIdByUsername(loggedInUsername);
+                if (!userId) {
+                    res.status(401).json({
+                        error: "Unauthorized",
+                        message: "User not found"
+                    });
+                    return;
+                }
+
+                // Create the src path for serving the image
+                const src = `/uploads/${req.file.filename}`;
+
+                // Create the image document in the database
+                const imageId = await imageProvider.createImage(src, name.trim(), userId);
+
+                console.log(`User ${loggedInUsername} uploaded image ${req.file.filename} with ID ${imageId}`);
+
+                // Respond with HTTP 201 Created
+                res.status(201).send();
+            } catch (error) {
+                console.error("Error creating image:", error);
+                res.status(500).json({ error: "Failed to create image" });
+            }
+        }
+    );
 } 

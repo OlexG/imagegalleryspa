@@ -1,0 +1,86 @@
+### PROTECTED API TESTING
+### First, login to get a JWT token, then copy the "signature" value from the response
+### and replace TOKEN_HERE in the requests below
+
+### Step 1: Login to get JWT token
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{ "username": "newuser", "password": "password" }
+
+### Step 2: Test protected endpoints
+
+### Get all images WITHOUT token (should return 401 Unauthorized)
+GET http://localhost:3000/api/images
+
+### Get all images WITH token (should work)
+GET http://localhost:3000/api/images
+Authorization: Bearer TOKEN_HERE
+
+### Search images WITH token
+GET http://localhost:3000/api/images?search=sunset
+Authorization: Bearer TOKEN_HERE
+
+### Update image name WITH token (should work if you own the image)
+PUT http://localhost:3000/api/images/68365c383d4c8c0cb202fc64
+Content-Type: application/json
+Authorization: Bearer TOKEN_HERE
+
+{
+  "name": "Updated Image Name"
+}
+
+### Test with invalid token (should return 403 Forbidden)
+GET http://localhost:3000/api/images
+Authorization: Bearer invalid.jwt.token
+
+### Test with malformed Authorization header (should return 401)
+GET http://localhost:3000/api/images
+Authorization: InvalidFormat
+
+### Test without Bearer prefix (should return 401)
+GET http://localhost:3000/api/images
+Authorization: TOKEN_HERE
+
+### ===== OWNERSHIP RESTRICTION TESTS =====
+
+### Step 3: Register a user with an existing image author's username (e.g., chunkylover23)
+### Note: The system will compare the user's _id with the image's authorId
+### If the user's _id matches an existing image's authorId, they can edit that image
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{ "username": "chunkylover23", "password": "password" }
+
+### Step 4: Login as chunkylover23 to get their token
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{ "username": "chunkylover23", "password": "password" }
+
+### Step 5: Try to edit an image owned by chunkylover23 (should work)
+### Replace CHUNKYLOVER23_TOKEN with the token from step 4
+### Replace IMAGE_ID with an actual image ID where authorId matches chunkylover23's _id
+PUT http://localhost:3000/api/images/68365c383d4c8c0cb202fc63
+Content-Type: application/json
+Authorization: Bearer TOKEN_HERE
+
+{
+  "name": "Updated by Owner"
+}
+
+### Step 6: Try to edit the same image with a different user's token (should return 403 Forbidden)
+### Use the token from step 1 (newuser) to try editing chunkylover23's image
+### This will fail because newuser's _id != chunkylover23's _id
+PUT http://localhost:3000/api/images/IMAGE_ID_OWNED_BY_CHUNKYLOVER23
+Content-Type: application/json
+Authorization: Bearer TOKEN_HERE
+
+{
+  "name": "Unauthorized Edit Attempt"
+}
+
+### Alternative: Create JWT token manually at jwt.io
+### Use payload: {"username": "chunkylover23", "iat": 1234567890, "exp": 9999999999}
+### Use secret: anythingYouWantReally (from .env file)
+### The system will look up chunkylover23's _id and compare it with the image's authorId 
