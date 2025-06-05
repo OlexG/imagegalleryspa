@@ -101,18 +101,8 @@ export function registerImageRoutes(app: express.Application, imageProvider: Ima
                 return;
             }
 
-            // Get the user's _id from their username
-            const userId = await imageProvider.getUserIdByUsername(loggedInUsername);
-            if (!userId) {
-                res.status(403).send({
-                    error: "Forbidden",
-                    message: "User not found"
-                });
-                return;
-            }
-
-            // Compare the user's _id with the image's authorId
-            if (image.authorId !== userId) {
+            // Compare the username directly with the image's authorId since authorId stores the username
+            if (image.authorId !== loggedInUsername) {
                 res.status(403).send({
                     error: "Forbidden",
                     message: "You can only edit your own images"
@@ -120,7 +110,7 @@ export function registerImageRoutes(app: express.Application, imageProvider: Ima
                 return;
             }
 
-            console.log(`User ${loggedInUsername} (ID: ${userId}) is authorized to edit image ${imageId}`);
+            console.log(`User ${loggedInUsername} is authorized to edit image ${imageId}`);
 
             // Update the image name
             const matchedCount = await imageProvider.updateImageName(imageId, name);
@@ -176,21 +166,11 @@ export function registerImageRoutes(app: express.Application, imageProvider: Ima
                     return;
                 }
 
-                // Get the user's _id from their username
-                const userId = await imageProvider.getUserIdByUsername(loggedInUsername);
-                if (!userId) {
-                    res.status(401).json({
-                        error: "Unauthorized",
-                        message: "User not found"
-                    });
-                    return;
-                }
-
                 // Create the src path for serving the image
                 const src = `/uploads/${req.file.filename}`;
 
-                // Create the image document in the database
-                const imageId = await imageProvider.createImage(src, name.trim(), userId);
+                // Use the username directly as the authorId since that's what we have available
+                const imageId = await imageProvider.createImage(src, name.trim(), loggedInUsername);
 
                 console.log(`User ${loggedInUsername} uploaded image ${req.file.filename} with ID ${imageId}`);
 

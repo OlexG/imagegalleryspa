@@ -4,32 +4,20 @@ interface IImageDocument {
     _id?: ObjectId | string;
     src: string;
     name: string;
-    authorId: string;  // Simple string reference to user's _id
-}
-
-interface IUserDocument {
-    _id?: string;  // User _id is a string like "chunkylover23"
-    username: string;
-    email?: string;
+    authorId: string;  // Simple string reference to user's username
 }
 
 export class ImageProvider {
     private collection: Collection<IImageDocument>
-    private usersCollection: Collection<IUserDocument>
 
     constructor(private readonly mongoClient: MongoClient) {
         const collectionName = process.env.IMAGES_COLLECTION_NAME;
-        const usersCollectionName = process.env.USERS_COLLECTION_NAME;
         
         if (!collectionName) {
             throw new Error("Missing IMAGES_COLLECTION_NAME from environment variables");
         }
-        if (!usersCollectionName) {
-            throw new Error("Missing USERS_COLLECTION_NAME from environment variables");
-        }
         
         this.collection = this.mongoClient.db().collection(collectionName);
-        this.usersCollection = this.mongoClient.db().collection(usersCollectionName);
     }
 
     async getAllImages(searchQuery?: string) {
@@ -50,7 +38,7 @@ export class ImageProvider {
                 ...imageWithoutAuthorId,
                 author: {
                     _id: authorId,
-                    username: `user_${authorId}`, // Fake username based on ID
+                    username: authorId, // Use the actual username since authorId contains the username
                     email: `${authorId}@example.com` // Fake email
                 }
             };
@@ -79,7 +67,7 @@ export class ImageProvider {
             ...imageWithoutAuthorId,
             author: {
                 _id: authorId,
-                username: `user_${authorId}`, // Fake username based on ID
+                username: authorId, // Use the actual username since authorId contains the username
                 email: `${authorId}@example.com` // Fake email
             }
         };
@@ -89,12 +77,6 @@ export class ImageProvider {
         // Get image document with authorId preserved for ownership verification
         const result = await this.collection.findOne({ _id: new ObjectId(imageId) });
         return result;
-    }
-
-    async getUserIdByUsername(username: string): Promise<string | null> {
-        // Get user's _id from their username for ownership verification
-        const user = await this.usersCollection.findOne({ username: username });
-        return user?._id || null;
     }
 
     async createImage(src: string, name: string, authorId: string): Promise<ObjectId | string> {
